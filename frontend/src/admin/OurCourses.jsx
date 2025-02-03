@@ -2,6 +2,7 @@ import axios from "axios";
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useNavigate } from "react-router-dom";
+import { Backend_URL } from "../utils/utils";
 
 function OurCourses() {
   const [courses, setCourses] = useState([]);
@@ -20,7 +21,7 @@ function OurCourses() {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const response = await axios.get(`http://localhost:4001/api/v1/course/courses`, {
+        const response = await axios.get(`${Backend_URL}/course/courses`, {
           withCredentials: true,
         });
         setCourses(response.data.courses);
@@ -36,7 +37,7 @@ function OurCourses() {
   const handleDelete = async (id) => {
     try {
       const response = await axios.delete(
-        `http://localhost:4001/api/v1/course/delete/${id}`,
+        `${Backend_URL}/course/delete/${id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

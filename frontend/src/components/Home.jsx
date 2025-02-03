@@ -7,6 +7,7 @@ import Slider from "react-slick"
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import toast from 'react-hot-toast';
+import { Backend_URL } from '../utils/utils';
 
 function Home() {
   const [courses, setCourses] = useState([]);
@@ -21,7 +22,7 @@ function Home() {
   // Logout user
   const handleLogout = async () => {
     try {
-      await axios.get("http://localhost:4001/api/v1/user/logout", {
+      await axios.get(`${Backend_URL}/user/logout`, {
         withCredentials: true
       });
       toast.success("Logged out successfully");
@@ -38,7 +39,7 @@ function Home() {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const response = await axios.get("http://localhost:4001/api/v1/course/courses", {
+        const response = await axios.get(`${Backend_URL}/course/courses`, {
           withCredentials: true, // Access cookies/tokens
         });
         console.log(response.data.courses);

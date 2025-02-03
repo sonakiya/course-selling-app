@@ -3,6 +3,7 @@ import logo from "../../public/logo.webp";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { Backend_URL } from "../utils/utils";
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -16,7 +17,7 @@ function Login() {
 
     try {
       const response = await axios.post(
-        "http://localhost:4001/api/v1/user/Login",
+        `${Backend_URL}/user/Login`,
         { email, password },
         {
           withCredentials: true,

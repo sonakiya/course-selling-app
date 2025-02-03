@@ -3,6 +3,7 @@ import logo from "../../public/logo.webp";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { Backend_URL } from '../utils/utils';
 
 function AdminSignup() {
   const [firstName, setFirstName] = useState("");
@@ -19,7 +20,7 @@ function AdminSignup() {
 
     try {   
       const response = await axios.post( //send data to backend
-        "http://localhost:4001/api/v1/admin/signup",
+       ` ${Backend_URL}/admin/signup`,
         {
           firstName,
           lastName,
