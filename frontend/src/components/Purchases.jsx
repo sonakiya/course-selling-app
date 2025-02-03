@@ -7,7 +7,6 @@ import { IoMdSettings } from 'react-icons/io';
 import { IoLogIn, IoLogOut } from 'react-icons/io5';
 import { RiHome2Fill } from 'react-icons/ri';
 import { Link } from 'react-router-dom';
-import { Backend_URL } from '../utils/utils';
 
 
 function Purchases() {
@@ -30,7 +29,7 @@ function Purchases() {
   // Logout user
   const handleLogout = async () => {
     try {
-      const response = axios.get(`${Backend_URL}/user/logout`, {
+      const response = axios.get("http://localhost:4001/api/v1/user/logout", {
         withCredentials: true,
       });
       toast.success((await response).data.message);
@@ -53,7 +52,7 @@ function Purchases() {
         return
       }
       try{
-        const response=await axios.get(`${Backend_URL}/user/purchases`,{
+        const response=await axios.get("http://localhost:4001/api/v1/user/purchases",{
           headers:{
             Authorization:`Bearer ${token}`
           },

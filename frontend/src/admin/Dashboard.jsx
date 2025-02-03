@@ -3,12 +3,11 @@ import { Link } from "react-router-dom";
 import logo from "../../public/logo.webp";
 import toast from "react-hot-toast";
 import axios from "axios";
-import { Backend_URL } from '../utils/utils';
 
 function Dashboard() {
   const handleLogout = async () => {
     try {
-      const response = await axios.get(`${Backend_URL}/admin/logout`, {
+      const response = await axios.get(`http://localhost:4001/api/v1/admin/logout`, {
         withCredentials: true,
       });
       toast.success(response.data.message);

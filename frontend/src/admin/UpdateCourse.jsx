@@ -70,7 +70,7 @@ function UpdateCourse() {
 
     try {
       const response = await axios.put(
-        `${Backend_URL}/course/update/${id}`,
+        `http://localhost:4001/api/v1/course/update/${id}`,
         formData,
         {
           headers: {
