@@ -3,11 +3,13 @@ import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { CardElement, useElements, useStripe } from "@stripe/react-stripe-js";
+import { useLocation } from "react-router-dom";
+
 
 function Buy() {
-  const { courseId } = useParams(); // Get courseId from URL
-  const [loading, setLoading] = useState(false); // Loading state
-  const navigate = useNavigate(); // Navigation hook
+  const { courseId } = useParams();
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
   const [course, setCourse] = useState({});
   const [clientSecret, setClientSecret] = useState("");
   const [error, setError] = useState("");
@@ -19,16 +21,19 @@ function Buy() {
   const elements = useElements();
   const [cardError, setCardError] = useState("");
 
+  const location = useLocation();
+const queryParams = new URLSearchParams(location.search);
+const passedPrice = queryParams.get("price"); // Get price from URL
+
+
   useEffect(() => {
     const fetchBuyCourseData = async () => {
-      // Check if token exists
       if (!token) {
         setError("Please login to purchase the courses");
         return;
       }
 
       try {
-        // Send purchase request to backend
         const response = await axios.post(
           `http://localhost:4001/api/v1/course/buy/${courseId}`,
           {},
@@ -36,67 +41,57 @@ function Buy() {
             headers: {
               Authorization: `Bearer ${token}`,
             },
-            withCredentials: true, // Include cookies in request
+            withCredentials: true,
           }
         );
 
-        console.log(response.data);
         setCourse(response.data.course);
         setClientSecret(response.data.clientSecret);
         setLoading(false);
       } catch (error) {
-        setLoading(false); // Stop loading spinner
-
-        // Handle specific errors
+        setLoading(false);
         if (error.response?.status === 400) {
           setError("You have already purchased this course");
         } else if (error.response?.status === 401) {
           setError("Session expired. Please login again.");
-          localStorage.removeItem("user"); // Clear invalid token
-          navigate("/login"); // Redirect to login page
+          localStorage.removeItem("user"); // Only remove if truly expired
+          navigate("/login");
         } else {
-          // General error handling
           toast.error(error.response?.data?.errors || "Something went wrong");
         }
       }
     };
 
     fetchBuyCourseData();
-  }, [courseId]);
+  }, [courseId, token]); // Added token dependency to prevent unwanted re-fetches
 
   const handlePurchase = async (event) => {
     event.preventDefault();
 
     if (!stripe || !elements) {
-      console.log("Stripe or Element not found");
       return;
     }
 
     setLoading(true);
     const card = elements.getElement(CardElement);
 
-    if (card == null) {
-      console.log("Card element not found");
+    if (!card) {
       setLoading(false);
       return;
     }
 
-    // Use your card Element with other Stripe.js APIs
     const { error, paymentMethod } = await stripe.createPaymentMethod({
       type: "card",
       card,
     });
 
     if (error) {
-      console.log("Stripe payment method error:", error);
-      setLoading(false);
       setCardError(error.message);
-    } else {
-      console.log("[PaymentMethod Created]", paymentMethod);
+      setLoading(false);
+      return;
     }
 
     if (!clientSecret) {
-      console.log("No client secret found");
       setLoading(false);
       return;
     }
@@ -114,9 +109,6 @@ function Buy() {
     if (confirmError) {
       setCardError(confirmError.message);
     } else if (paymentIntent.status === "succeeded") {
-      console.log("Payment succeeded: ", paymentIntent);
-      setCardError(`Your payment ID: ${paymentIntent.id}`);
-
       const paymentInfo = {
         email: user?.user?.email,
         userId: user.user._id,
@@ -126,65 +118,73 @@ function Buy() {
         status: paymentIntent.status,
       };
 
-      console.log("Payment info: ", paymentInfo);
-      await axios.post("http://localhost:4001/api/v1/order",paymentInfo,{
-        headers:{
-          Authorization:`Bearer ${token}`,
-        },
-        withCredentials:true,
-      })
-      .then(response=>{
-        console.log(response.data)
-      }).catch((error)=>{
-        console.log(error)
-        toast.error("Error in making payment")
-      })
-      toast.success("payment successfull");
-      navigate("/purchases")
+      try {
+        const response = await axios.post(
+          "http://localhost:4001/api/v1/order",
+          paymentInfo,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            withCredentials: true,
+          }
+        );
+
+        toast.success("Payment successful!");
+        
+        // ✅ Ensure proper redirect without clearing session
+        setTimeout(() => {
+          navigate("/purchases");
+        }, 1500);
+
+      } catch (error) {
+        if (error.response?.status === 401) {
+          toast.error("Session expired. Please login again.");
+          localStorage.removeItem("user");
+          navigate("/login");
+        } else {
+          toast.error("Error in making payment");
+        }
+      }
     }
+
     setLoading(false);
   };
 
   return (
     <>
-    {error ? (
-      <div className="flex justify-center items-center h-screen">
-        <div className="bg-red-100 text-red-700 px-6 py-4 rounded-lg">
-          <p className="text-lg font-semibold">{error}</p>
-          <Link
-            className="w-full bg-orange-500 text-white py-2 rounded-md hover:bg-orange-600 transition duration-200 mt-3 flex items-center justify-center"
-            to={"/purchases"}
-          >
-            Purchases
-          </Link>
-        </div>
-      </div>
-    ) : (
-      <div className="flex flex-col sm:flex-row my-40 container mx-auto">
-        <div className="w-full md:w-1/2">
-          <h1 className="text-xl font-semibold underline">Order Details</h1>
-          <div className="flex items-center text-center space-x-2 mt-4">
-            <h2 className="text-gray-600 text-sm">Total Price</h2>
-            <p className="text-red-500 font-bold">${course.price}</p>
-          </div>
-          <div className="flex items-center text-center space-x-2">
-            <h1 className="text-gray-600 text-sm">Course name</h1>
-            <p className="text-red-500 font-bold">{course.title}</p>
+      {error ? (
+        <div className="flex justify-center items-center h-screen">
+          <div className="bg-red-100 text-red-700 px-6 py-4 rounded-lg">
+            <p className="text-lg font-semibold">{error}</p>
+            <Link
+              className="w-full bg-orange-500 text-white py-2 rounded-md hover:bg-orange-600 transition duration-200 mt-3 flex items-center justify-center"
+              to={"/purchases"}
+            >
+              Purchases
+            </Link>
           </div>
         </div>
+      ) : (
+        <div className="flex flex-col sm:flex-row my-40 container mx-auto">
+          <div className="w-full md:w-1/2">
+            <h1 className="text-xl font-semibold underline">Order Details</h1>
+            <div className="flex items-center text-center space-x-2 mt-4">
+              <h2 className="text-gray-600 text-sm">Total Price</h2>
+              <p className="text-red-500 font-bold">${passedPrice || course.price}</p>
 
-        <div className="w-full md:w-1/2 flex justify-center items-center">
-          <div className="bg-white shadow-md rounded-lg p-6 w-full max-w-sm">
-            <h2 className="text-lg font-semibold mb-4">
-              Process your Payment!
-            </h2>
-            <div className="mb-4">
-              <label
-                className="block text-gray-700 text-sm mb-2"
-                htmlFor="card-number"
-              >
-                Credit/Debit Card
-              </label>
+            </div>
+            <div className="flex items-center text-center space-x-2">
+              <h1 className="text-gray-600 text-sm">Course name</h1>
+              <p className="text-red-500 font-bold">{course.title}</p>
+            </div>
+          </div>
+
+          <div className="w-full md:w-1/2 flex justify-center items-center">
+            <div className="bg-white shadow-md rounded-lg p-6 w-full max-w-sm">
+              <h2 className="text-lg font-semibold mb-4">
+                Process your Payment!
+              </h2>
               <form onSubmit={handlePurchase}>
                 <CardElement
                   options={{
@@ -205,27 +205,24 @@ function Buy() {
 
                 <button
                   type="submit"
-                  disabled={!stripe || loading} // Disable button when loading
+                  disabled={!stripe || loading}
                   className="mt-8 w-full bg-indigo-500 text-white py-2 rounded-md hover:bg-indigo-600 transition duration-200"
                 >
                   {loading ? "Processing..." : "Pay"}
                 </button>
               </form>
               {cardError && (
-                <p className="text-red-500 font-semibold text-xs">
-                  {cardError}
-                </p>
+                <p className="text-red-500 font-semibold text-xs">{cardError}</p>
               )}
-            </div>
 
-            <button className="w-full bg-orange-500 text-white py-2 rounded-md hover:bg-orange-600 transition duration-200 mt-3 flex items-center justify-center">
-              <span className="mr-2">🅿️</span> Other Payments Method
-            </button>
+              <button className="w-full bg-orange-500 text-white py-2 rounded-md hover:bg-orange-600 transition duration-200 mt-3 flex items-center justify-center">
+                <span className="mr-2">🅿️</span> Other Payments Method
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    )}
-  </>
+      )}
+    </>
   );
 }
 

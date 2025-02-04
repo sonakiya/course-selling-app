@@ -188,12 +188,9 @@ function Courses() {
                     </div>
 
                     {/* Buy Button */}
-                    <Link
-                      to={`/buy/${course._id}`}
-                      className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-blue-900 duration-300 mt-auto"
-                    >
-                      Buy Now
-                    </Link>
+                    <Link to={`/buy/${course._id}?price=${discountedPrice}`}
+                   className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-blue-900 duration-300 mt-auto">Buy Now</Link>
+
                   </div>
                 );
               })}
